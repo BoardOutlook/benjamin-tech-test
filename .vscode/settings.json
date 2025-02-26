@@ -1,0 +1,4 @@
+{
+    "dotnet.defaultSolution": "ExecutivesCompensation.sln",
+    "files.insertFinalNewline": true,
+}

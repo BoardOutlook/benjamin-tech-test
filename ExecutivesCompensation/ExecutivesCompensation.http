@@ -1,0 +1,6 @@
+@ExecutivesCompensation_HostAddress = http://localhost:5091
+
+GET {{ExecutivesCompensation_HostAddress}}/api/v1/companies/executives/compensation
+Accept: application/json
+
+###
