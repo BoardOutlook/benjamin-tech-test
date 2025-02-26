@@ -330,6 +330,28 @@ public sealed class CompanyInfoClientTests
     }
 
     [TestMethod]
+    public async Task GetIndustryBenchmarkAsync_WhenBackendNotFound_ShouldReturnNull()
+    {
+        // Arrange.
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+
+        handler.SetupAnyRequest().ReturnsResponse(HttpStatusCode.NotFound);
+
+        HttpClient httpClient = handler.CreateClient();
+        httpClient.BaseAddress = new Uri(BaseUrl);
+
+        var sut = new CompanyInfoClient(
+            httpClient,
+            "fakeApiKey");
+
+        // Act.
+        var result = await sut.GetIndustryBenchmarkAsync("BOARD SERVICES", CancellationToken.None);
+
+        // Assert.
+        result.Should().BeNull();
+    }
+
+    [TestMethod]
     public async Task GetIndustryBenchmarkAsync_WhenIndustryTitleMismatch_ShouldThrow()
     {
         // Arrange.

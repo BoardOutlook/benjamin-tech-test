@@ -1,16 +1,8 @@
+using System.Net;
 using System.Text.Json;
 using ExecutivesCompensation.Clients.Model;
 
 namespace ExecutivesCompensation.Clients;
-
-public interface ICompanyInfoClient
-{
-    public Task<IEnumerable<StockInfo>> GetExchangeCompaniesAsync(string exchangeSymbol, CancellationToken cancellationToken);
-
-    public Task<IEnumerable<Executive>> GetCompanyExecutivesAsync(string companySymbol, CancellationToken cancellationToken);
-
-    public Task<IndustryBenchmark> GetIndustryBenchmarkAsync(string industryTitle, CancellationToken cancellationToken);
-}
 
 // Simple exception wrapper for CompanyInfoClient.
 [Serializable]
@@ -32,19 +24,14 @@ public class CompanyInfoClient : ICompanyInfoClient
         _apiKey = apiKey;
     }
 
-    /// <summary>
-    /// Gets all companies listed on the given exchange.
-    /// </summary>
-    /// <returns>The info for each company.</returns>
-    /// <exception cref="CompanyInfoClientException">If the server returns a failure response or unexpected data.</exception>
-    /// <exception cref="JsonException">If there is an error in parsing the JSON response.</exception>
-    public async Task<IEnumerable<StockInfo>> GetExchangeCompaniesAsync(string exchangeSymbol, CancellationToken cancellationToken)
+
+    public async Task<IList<StockInfo>> GetExchangeCompaniesAsync(string exchangeSymbol, CancellationToken cancellationToken)
     {
         string url = $"api/exchanges/{exchangeSymbol}/companies?code={_apiKey}";
         HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new CompanyInfoClientException("CompanyInfo service returned failure HTTP status " + response.StatusCode);
+            throw new CompanyInfoClientException("CompanyInfo service returned failure HTTP status " + response.StatusCode + " for exchange " + exchangeSymbol);
         }
 
         using Stream contentStream =
@@ -56,8 +43,8 @@ public class CompanyInfoClient : ICompanyInfoClient
         {
             throw new JsonException("Unexpected null IEnumerable<StockInfo> from JsonSerializer");
         }
-        StockInfo[] stocksArray = stocks.ToArray();
-        foreach (var stock in stocksArray)
+        List<StockInfo> stocksList = stocks.ToList();
+        foreach (var stock in stocksList)
         {
             if (stock.Type != "stock")
             {
@@ -68,22 +55,17 @@ public class CompanyInfoClient : ICompanyInfoClient
                 throw new CompanyInfoClientException("Unexpected stock exchange symbol: " + stock.ExchangeShortName);
             }
         }
-        return stocksArray;
+        return stocksList;
     }
 
-    /// <summary>
-    /// Gets all company executives for the given company.
-    /// </summary>
-    /// <returns>The info for each executive.</returns>
-    /// <exception cref="CompanyInfoClientException">If the server returns a failure response or unexpected data.</exception>
-    /// <exception cref="JsonException">If there is an error in parsing the JSON response.</exception>
-    public async Task<IEnumerable<Executive>> GetCompanyExecutivesAsync(string companySymbol, CancellationToken cancellationToken)
+
+    public async Task<IList<Executive>> GetCompanyExecutivesAsync(string companySymbol, CancellationToken cancellationToken)
     {
         string url = $"api/companies/{companySymbol}/executives?code={_apiKey}";
         HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new CompanyInfoClientException("CompanyInfo service returned failure HTTP status " + response.StatusCode);
+            throw new CompanyInfoClientException("CompanyInfo service returned failure HTTP status " + response.StatusCode + " for company " + companySymbol);
         }
 
         using Stream? contentStream =
@@ -95,30 +77,28 @@ public class CompanyInfoClient : ICompanyInfoClient
         {
             throw new JsonException("Unexpected null IEnumerable<Executive> from JsonSerializer");
         }
-        Executive[] executivesArray = executives.ToArray();
-        foreach (var executive in executivesArray)
+        List<Executive> executivesList = executives.ToList();
+        foreach (var executive in executivesList)
         {
             if (executive.Symbol != companySymbol)
             {
                 throw new CompanyInfoClientException("Unexpected executive company symbol: " + executive.Symbol);
             }
         }
-        return executivesArray;
+        return executivesList;
     }
 
-    /// <summary>
-    /// Gets the benchmark information for the given industry.
-    /// </summary>
-    /// <returns>The benchmark information.</returns>
-    /// <exception cref="CompanyInfoClientException">If the server returns a failure response or unexpected data.</exception>
-    /// <exception cref="JsonException">If there is an error in parsing the JSON response.</exception>
-    public async Task<IndustryBenchmark> GetIndustryBenchmarkAsync(string industryTitle, CancellationToken cancellationToken)
+    public async Task<IndustryBenchmark?> GetIndustryBenchmarkAsync(string industryTitle, CancellationToken cancellationToken)
     {
         string url = $"api/industries/{industryTitle}/benchmark?code={_apiKey}";
         HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
         if (!response.IsSuccessStatusCode)
         {
-            throw new CompanyInfoClientException("CompanyInfo service returned failure HTTP status " + response.StatusCode);
+            throw new CompanyInfoClientException("CompanyInfo service returned failure HTTP status " + response.StatusCode + " for industry " + industryTitle);
         }
 
         using Stream? contentStream =
@@ -126,11 +106,7 @@ public class CompanyInfoClient : ICompanyInfoClient
 
         IndustryBenchmark? benchmark = await JsonSerializer.DeserializeAsync
                     <IndustryBenchmark>(contentStream, cancellationToken: cancellationToken);
-        if (benchmark == null)
-        {
-            throw new JsonException("Unexpected null IndustryBenchmark from JsonSerializer");
-        }
-        if (benchmark.IndustryTitle != industryTitle)
+        if (benchmark != null && benchmark.IndustryTitle != industryTitle)
         {
             throw new CompanyInfoClientException("Unexpected benchmark industry title: " + benchmark.IndustryTitle);
         }

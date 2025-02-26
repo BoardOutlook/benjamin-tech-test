@@ -1,7 +1,11 @@
 
+using System.Net;
 using System.Reflection;
 using ExecutivesCompensation.Clients;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.OpenApi.Models;
+using Polly;
+using Polly.Extensions.Http;
 
 namespace ExecutivesCompensation;
 
@@ -23,14 +27,19 @@ public class Program
             throw new ArgumentException("Configuration is missing CompanyInfoServiceBaseUrl.");
         }
 
+        // TODO: tune cache size, etc.
+        MemoryCache cache = new MemoryCache(new MemoryCacheOptions());
+
         // Register the ICompanyInfoClient dependency with dependency injection.
-        builder.Services.AddHttpClient<ICompanyInfoClient, CompanyInfoClient>(client =>
+        builder.Services.AddHttpClient<ICompanyInfoClient, CachingCompanyInfoClient>(client =>
         {
             client.BaseAddress = new Uri(companyInfoServiceBaseUrl);
-            return new CompanyInfoClient(client, apiKey);
+            var companyInfoClient = new CompanyInfoClient(client, apiKey);
+            return new CachingCompanyInfoClient(companyInfoClient, cache);
+        })
             // Set 5 min as the lifetime for the HttpMessageHandler objects in the pool.
-        }).SetHandlerLifetime(TimeSpan.FromMinutes(5));
-
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+            .AddPolicyHandler(GetRetryPolicy());
 
         builder.Services.AddControllers();
 
@@ -64,5 +73,14 @@ public class Program
         app.MapControllers();
 
         app.Run();
+    }
+
+    // Allow retrying transient HTTP errors with exponential backoff.
+    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+    {
+        return HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .OrResult(msg => msg.StatusCode == HttpStatusCode.TooManyRequests)
+            .WaitAndRetryAsync(retryCount: 6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
     }
 }
