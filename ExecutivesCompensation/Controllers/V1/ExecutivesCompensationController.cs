@@ -1,3 +1,4 @@
+using ExecutivesCompensation.Clients;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExecutivesCompensation.Controllers.V1;
@@ -10,10 +11,12 @@ namespace ExecutivesCompensation.Controllers.V1;
 [Route("api/v1/companies/executives/compensation")]
 public class ExecutivesCompensationController : ControllerBase
 {
+    private readonly ICompanyInfoClient _companyInfoClient;
     private readonly ILogger<ExecutivesCompensationController> _logger;
 
-    public ExecutivesCompensationController(ILogger<ExecutivesCompensationController> logger)
+    public ExecutivesCompensationController(ICompanyInfoClient companyInfoClient, ILogger<ExecutivesCompensationController> logger)
     {
+        _companyInfoClient = companyInfoClient;
         _logger = logger;
     }
 
@@ -23,7 +26,7 @@ public class ExecutivesCompensationController : ControllerBase
     /// <returns>The executive compensation information.</returns>
     [Route("")]
     [HttpGet]
-    public IEnumerable<ExecutiveCompensation> Get()
+    public ActionResult<IEnumerable<ExecutiveCompensation>> Get()
     {
         var comp = new ExecutiveCompensation[] {
                 new ExecutiveCompensation
@@ -38,6 +41,6 @@ public class ExecutivesCompensationController : ControllerBase
                     Compensation = 200000.0,
                     AverageIndustryCompensation = 120000.0
                 }};
-        return comp;
+        return Ok(comp);
     }
 }
