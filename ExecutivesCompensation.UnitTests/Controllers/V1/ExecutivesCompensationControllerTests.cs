@@ -43,7 +43,7 @@ public sealed class ExecutivesCompensationControllerTests
         var stock2 = new StockInfo { Symbol = "GOOG", ExchangeShortName = "ASX", Type = "stock" };
         var stock3 = new StockInfo { Symbol = "MSFT", ExchangeShortName = "ASX", Type = "stock" };
         // Empty symbol. Should be ignored.
-        var stock4 = new StockInfo { Symbol = "", ExchangeShortName = "ASX", Type = "stock" };  // Empty symbols are ignored.
+        var stock4 = new StockInfo { Symbol = "", ExchangeShortName = "ASX", Type = "stock" };
         var stocks = new StockInfo[] { stock1, stock2, stock3, stock4 };
         SetupGetExchangeCompaniesAsync(client, "ASX", stocks);
 
@@ -99,14 +99,14 @@ public sealed class ExecutivesCompensationControllerTests
         client.Verify(x => x.GetIndustryBenchmarkAsync("WEB API DEVELOPMENT", It.IsAny<CancellationToken>()), Times.Once());
     }
 
-     [TestMethod]
+    [TestMethod]
     public async Task GetAsync_WhenNoCompanies_ShouldReturnInternalServerError()
     {
         // Arrange.
         var client = new Mock<ICompanyInfoClient>(MockBehavior.Strict);
         var logger = new Mock<ILogger<ExecutivesCompensationController>>(MockBehavior.Strict);
 
-        var stocks = new StockInfo[] {};
+        var stocks = new StockInfo[] { };
         SetupGetExchangeCompaniesAsync(client, "ASX", stocks);
 
         var sut = new ExecutivesCompensationController(client.Object, logger.Object);
