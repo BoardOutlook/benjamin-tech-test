@@ -24,7 +24,6 @@ public class CompanyInfoClient : ICompanyInfoClient
         _apiKey = apiKey;
     }
 
-
     public async Task<IList<StockInfo>> GetExchangeCompaniesAsync(string exchangeSymbol, CancellationToken cancellationToken)
     {
         string url = $"api/exchanges/{exchangeSymbol}/companies?code={_apiKey}";
@@ -57,7 +56,6 @@ public class CompanyInfoClient : ICompanyInfoClient
         }
         return stocksList;
     }
-
 
     public async Task<IList<Executive>> GetCompanyExecutivesAsync(string companySymbol, CancellationToken cancellationToken)
     {
@@ -113,4 +111,3 @@ public class CompanyInfoClient : ICompanyInfoClient
         return benchmark;
     }
 }
-

@@ -53,9 +53,9 @@ public class ExecutivesCompensationController : ControllerBase
                 try
                 {
                     await mutex.WaitAsync();
-                    IList<Executive> compensations = await _companyInfoClient.GetCompanyExecutivesAsync(companySymbol, cancellationToken);
+                    IList<Executive> executives = await _companyInfoClient.GetCompanyExecutivesAsync(companySymbol, cancellationToken);
                     // Note: It's OK here if a company has no executives.
-                    return compensations;
+                    return executives;
                 }
                 finally { mutex.Release(); }
             });
