@@ -22,8 +22,6 @@ dotnet user-secrets --project ExecutivesCompensation set "ServiceApiKey" "<value
 
 ### Running the service
 
-
-
 You can open the solution in Visual Studio (untested) or VSCode, or run the following from the top-level directory:
 
 ```shell
@@ -36,3 +34,17 @@ You can run tests with `dotnet test`.
 ### Debugging with Swagger
 
 Once up and running, the swagger UI should be accessible at http://localhost:5091/swagger.
+
+The first request may take some time. However, intermediate results are cached so subsequent requests should be faster.
+
+## Future work
+
+*   (P0) End-to-end tests: Currently only unit tests
+*   (P1) Incoming QoS logging
+*   (P1) Outgoing QoS logging
+*   (P1) Build pipeline
+*   (P1) Deployment pipeline
+*   (P2) See if we can auto-generate the client models instead of manually writing them
+*   (P2) Better exception handling
+*   (P2) Add jitter to the cache expiry
+*   (P3) Filtering data if the year is too old
